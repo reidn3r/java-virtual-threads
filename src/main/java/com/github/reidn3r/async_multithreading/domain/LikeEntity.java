@@ -1,0 +1,30 @@
+package com.github.reidn3r.async_multithreading.domain;
+
+import java.sql.Date;
+
+import org.springframework.data.annotation.CreatedDate;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "tb_likes")
+public class LikeEntity {
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  private Long userId;
+
+  @CreatedDate
+  private Date created_at;
+
+  @ManyToOne()
+  @JoinColumn(name="postId")
+  private PostEntity posts;
+}
