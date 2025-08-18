@@ -5,10 +5,10 @@ import org.springframework.stereotype.Service;
 import com.github.reidn3r.async_multithreading.repository.PostsRepository;
 
 @Service
-public class PersistenceService {
+public class DbService {
   private final PostsRepository repository;
 
-  public PersistenceService(PostsRepository repository){
+  public DbService(PostsRepository repository){
     this.repository = repository;
   }
 
@@ -16,7 +16,7 @@ public class PersistenceService {
     this.repository.incrementLikesCount(id);
   }
   
-  // public void incrementShareById(Long id){
-  //   this.repository.incrementSharesCountByPostId(id);
-  // }
+  public void incrementShareById(Long id){
+    this.repository.incrementSharesCount(id);
+  }
 }
