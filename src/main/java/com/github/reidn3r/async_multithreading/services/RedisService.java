@@ -67,8 +67,8 @@ public class RedisService {
     future.thenAccept(messages -> {
       if(!messages.isEmpty()){
         for (StreamMessage<String, String> message : messages) {
-          System.out.println("Received message: " + message.getId() + " - " + message.getBody());
           this.worker.process(message);
+          this.ack(message.getId());
         }
       }
     });

@@ -1,7 +1,6 @@
 package com.github.reidn3r.async_multithreading.services;
 
 import java.util.Set;
-import java.util.concurrent.Executor;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -21,20 +20,20 @@ public class DispatcherService {
   private final Validator validator;
   private final RedisService redis;
 
-  public DispatcherService(RedisService redis, Executor threadExecutor){
+  public DispatcherService(RedisService redis){
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     this.validator = factory.getValidator();
     this.redis = redis;
   }
 
-  @Async
+  @Async //TODO: Verificar Gargalo em @Async
   public void submit(String data) throws Exception {
     InteractionDTO dto = mapper.readValue(data, InteractionDTO.class);
     this.validate(dto);
     this.redis.stream(dto);
   }
 
-    private void validate(InteractionDTO dto) throws ValidationException {
+  private void validate(InteractionDTO dto) throws ValidationException {
     Set<ConstraintViolation<InteractionDTO>> errors = validator.validate(dto);
     
     if (!errors.isEmpty()) {
