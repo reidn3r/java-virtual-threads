@@ -4,6 +4,8 @@ import java.sql.Date;
 
 import org.springframework.data.annotation.CreatedDate;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -28,5 +30,6 @@ public class ShareEntity {
 
   @ManyToOne()
   @JoinColumn(name = "postId")
+  @JsonBackReference
   private PostEntity posts;
 }

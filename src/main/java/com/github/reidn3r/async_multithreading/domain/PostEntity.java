@@ -6,14 +6,18 @@ import java.util.List;
 
 import org.springframework.data.annotation.CreatedDate;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.Data;
 
 @Entity
+@Data
 @Table(name="tb_posts")
 public class PostEntity {
 
@@ -32,8 +36,10 @@ public class PostEntity {
   private Date created_at;
 
   @OneToMany(mappedBy = "posts")
-  private List<LikeEntity> likes;
-
+  @JsonManagedReference
+  private List<LikeEntity> likes; 
+  
   @OneToMany(mappedBy = "posts")
+  @JsonManagedReference
   private List<ShareEntity> shares;
 }
