@@ -12,8 +12,12 @@ import com.github.reidn3r.async_multithreading.dto.HealthCheck.HealthCheckDTO;
 @RequestMapping("/health")
 public class HealthCheckController {
   
-  private static HealthCheckDTO dto = new HealthCheckDTO();
+  private final HealthCheckDTO dto;
 
+  public HealthCheckController(HealthCheckDTO dto) {
+    this.dto = dto;
+  }
+  
   @GetMapping()
   public ResponseEntity<HealthCheckDTO> check(){
     return ResponseEntity.status(HttpStatus.OK).body(dto);
