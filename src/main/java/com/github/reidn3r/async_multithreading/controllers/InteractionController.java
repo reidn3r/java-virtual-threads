@@ -1,29 +1,41 @@
 package com.github.reidn3r.async_multithreading.controllers;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionPostStats;
+import com.github.reidn3r.async_multithreading.repository.PostsRepository;
 import com.github.reidn3r.async_multithreading.services.DispatcherService;
 
 @RestController
 @RequestMapping("/interactions")
 public class InteractionController {
   private DispatcherService dispatcher;
+  private PostsRepository repository;
 
-  public InteractionController(DispatcherService dispatcher){
+  public InteractionController(DispatcherService dispatcher, PostsRepository repository){
     this.dispatcher = dispatcher;
+    this.repository = repository;
   }
 
   private static final ResponseEntity<Object> CREATED_RESPONSE = 
-    new ResponseEntity<Object>(HttpStatus.CREATED);
+    ResponseEntity.status(HttpStatus.CREATED).body(null);
 
   @PostMapping()
   public ResponseEntity<Object> write(@RequestBody() String body) throws Exception {
     this.dispatcher.submit(body);
     return CREATED_RESPONSE;
+  }
+
+  @GetMapping("/stats")
+  public ResponseEntity<InteractionPostStats> stats(){
+    InteractionPostStats stats = this.repository.stats();
+    return ResponseEntity.status(HttpStatus.OK).body(stats);
   }
 }

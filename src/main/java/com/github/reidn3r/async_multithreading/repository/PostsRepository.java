@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.github.reidn3r.async_multithreading.domain.PostEntity;
+import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionPostStats;
 
 import jakarta.transaction.Transactional;
 
@@ -25,4 +26,8 @@ public interface PostsRepository extends JpaRepository<PostEntity, Long> {
     @Transactional
     @Query("UPDATE PostEntity p SET p.shares_count = p.shares_count + 1 WHERE p.id = :postId")
     void incrementSharesCount(@Param("postId") Long postId);
+
+    
+    @Query("SELECT SUM(p.likes_count) as likeCount, SUM(p.shares_count) as shareCount FROM PostEntity p")
+    InteractionPostStats stats();
 }
