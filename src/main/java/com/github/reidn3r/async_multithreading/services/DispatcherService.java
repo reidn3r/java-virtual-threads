@@ -1,10 +1,11 @@
 package com.github.reidn3r.async_multithreading.services;
 
 import java.util.Set;
+import java.util.concurrent.Executor;
 
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionDTO;
 
@@ -19,18 +20,26 @@ public class DispatcherService {
   private final ObjectMapper mapper = new ObjectMapper();
   private final Validator validator;
   private final RedisService redis;
+  private final Executor threadExecutor;
 
-  public DispatcherService(RedisService redis){
+  public DispatcherService(RedisService redis, Executor thExecutor){
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     this.validator = factory.getValidator();
     this.redis = redis;
+    this.threadExecutor = thExecutor;
   }
 
-  @Async //TODO: Verificar Gargalo em @Async
   public void submit(String data) throws Exception {
-    InteractionDTO dto = mapper.readValue(data, InteractionDTO.class);
-    this.validate(dto);
-    this.redis.stream(dto);
+    this.threadExecutor.execute(() -> {
+      InteractionDTO dto;
+      try {
+        dto = mapper.readValue(data, InteractionDTO.class);
+        this.validate(dto);
+        this.redis.stream(dto);
+      } catch (JsonProcessingException e) {
+        System.out.println("Erro: " + e.getMessage());
+      }
+    });
   }
 
   private void validate(InteractionDTO dto) throws ValidationException {
@@ -40,5 +49,4 @@ public class DispatcherService {
       throw new ValidationException("Erros de Validação.");
     }
   }
-
 }
