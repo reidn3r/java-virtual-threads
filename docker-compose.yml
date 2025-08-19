@@ -9,6 +9,8 @@ services:
       POSTGRES_DB: interactions
     volumes:
       - pg_data:/var/lib/postgresql/data
+    networks:
+      - app-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pgsql -d interactions"]
       interval: 5s
@@ -21,12 +23,39 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - app-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  api_1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/interactions
+      - SPRING_DATASOURCE_USERNAME=pgsql
+      - SPRING_DATASOURCE_PASSWORD=pgsql
+      - SPRING_REDIS_HOST=redis  
+      - SPRING_REDIS_PORT=6379   
+      - HEALTH_INSTANCE=2
+    networks:
+      - app-network
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   pg_data:
   redis_data:
+
+networks:
+  app-network:
+    driver: bridge
