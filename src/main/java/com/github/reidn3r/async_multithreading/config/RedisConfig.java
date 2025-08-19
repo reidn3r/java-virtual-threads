@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.api.async.RedisStreamAsyncCommands;
 import io.lettuce.core.api.sync.RedisCommands;
 
@@ -29,6 +30,12 @@ public class RedisConfig {
       
   @Bean
   public RedisStreamAsyncCommands<String, String> asyncRedis(
+    StatefulRedisConnection<String, String> connection) {
+    return connection.async();
+  }
+
+  @Bean
+  public RedisAsyncCommands<String, String> asyncCommands(
     StatefulRedisConnection<String, String> connection) {
     return connection.async();
   }

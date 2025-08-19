@@ -1,21 +1,28 @@
 package com.github.reidn3r.async_multithreading.services;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionDTO;
+import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionEnum;
+import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionRedisMessage;
 import com.github.reidn3r.async_multithreading.worker.Worker;
 
 import io.lettuce.core.Consumer;
 import io.lettuce.core.RedisBusyException;
 import io.lettuce.core.RedisFuture;
+import io.lettuce.core.SetArgs;
 import io.lettuce.core.StreamMessage;
 import io.lettuce.core.XGroupCreateArgs;
 import io.lettuce.core.XReadArgs;
 import io.lettuce.core.XReadArgs.StreamOffset;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.api.async.RedisStreamAsyncCommands;
 import io.lettuce.core.api.sync.RedisCommands;
 import jakarta.annotation.PostConstruct;
@@ -29,20 +36,23 @@ public class RedisService {
 
   private static final String REDIS_STREAM = "interactions_stream";
   private static final String CONSUMER_GROUP = "interactions_group";
-  private static final String CONSUMER_NAME = "a";
+  private static final String CONSUMER_NAME = "consumer-" + UUID.randomUUID();
   
   private final RedisStreamAsyncCommands<String, String> asyncRedis;
   private final RedisCommands<String, String> redisCommands;
+  private final RedisAsyncCommands<String, String> asyncCommands;
   private final Worker worker;
   
   
   public RedisService (
-    RedisStreamAsyncCommands<String, String> asyncCommands,
+    RedisStreamAsyncCommands<String, String> asyncRedis,
     RedisCommands<String, String> redisCommands,
+    RedisAsyncCommands<String, String> asyncCommands,
     Worker worker
   ) {
     this.redisCommands = redisCommands;
-    this.asyncRedis = asyncCommands;
+    this.asyncCommands = asyncCommands;
+    this.asyncRedis = asyncRedis;
     this.worker = worker;
   }
 
@@ -66,15 +76,54 @@ public class RedisService {
 
     future.thenAccept(messages -> {
       if(!messages.isEmpty()){
-        for (StreamMessage<String, String> message : messages) {
-          this.worker.process(message);
+        for (StreamMessage<String, String> message : messages) {            
+          InteractionRedisMessage msg = this.parseStreamMessage(message);
+
+          // Verifica se a interação já existe antes de tentar salvar
+          RedisFuture<String> futureExistingValue = this.findUserInteraction(msg.getUserId(), msg.getPostId(), msg.getInteractionEnum());
+          futureExistingValue.thenAccept(value -> {
+            if(value == null){
+              this.storeUserInteaction(msg.getUserId(), msg.getPostId(), msg.getInteractionEnum());
+              this.worker.process(message);
+            }
+          });
           this.ack(message.getId());
         }
       }
     });
   }
+  
+  private RedisFuture<String> storeUserInteaction(Long userId, Long postId, InteractionEnum interactionEnum){
+    /*
+      - K: userid:postid:interaction 
+      - V: Instant.now().toString() 
+      - TTL: 60s
+    */
 
-  public void ack(String messageId) {
+    String key = userId + "::" + postId + "::" + interactionEnum.getInteraction();
+    String value = Instant.now().toString();
+
+    SetArgs setArgs = SetArgs.Builder.ex(60); 
+    return this.asyncCommands.set(key, value, setArgs);
+  }
+  
+  private RedisFuture<String> findUserInteraction(Long userId, Long postId, InteractionEnum interactionEnum){
+    String key = userId + "::" + postId + "::" + interactionEnum.getInteraction();
+    return this.asyncCommands.get(key);
+  }
+
+  private InteractionRedisMessage parseStreamMessage(StreamMessage<String, String> message){
+    Map<String, String> body = message.getBody();
+    
+    Long postId = Long.valueOf(body.get("postId"));
+    Long userId = Long.valueOf(body.get("userId"));
+    String interaction = body.get("interaction");
+    InteractionEnum interactionEnum = InteractionEnum.valueOf(interaction);
+
+    return new InteractionRedisMessage(postId, userId, interaction, interactionEnum);
+  }
+
+  private void ack(String messageId) {
     asyncRedis.xack(REDIS_STREAM, CONSUMER_GROUP, messageId);
   }
 
