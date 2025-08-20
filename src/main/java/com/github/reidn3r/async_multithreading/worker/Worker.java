@@ -67,7 +67,7 @@ public class Worker {
     });
   }
 
-  @Scheduled(fixedDelay = 100)
+  @Scheduled(fixedDelay = 10)
   public void consume(){
     RedisFuture<List<StreamMessage<String, String>>> future = this.asyncRedis.xreadgroup(
       Consumer.from(CONSUMER_GROUP, CONSUMER_NAME),
