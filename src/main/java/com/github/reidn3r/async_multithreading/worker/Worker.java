@@ -1,148 +1,112 @@
 package com.github.reidn3r.async_multithreading.worker;
 
-import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.github.reidn3r.async_multithreading.domain.PostEntity;
-import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionEnum;
-import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionRedisMessage;
-import com.github.reidn3r.async_multithreading.services.DbService;
-
 import io.lettuce.core.Consumer;
-import io.lettuce.core.RedisFuture;
-import io.lettuce.core.SetArgs;
 import io.lettuce.core.StreamMessage;
 import io.lettuce.core.XReadArgs;
 import io.lettuce.core.XReadArgs.StreamOffset;
-import io.lettuce.core.api.async.RedisAsyncCommands;
-import io.lettuce.core.api.async.RedisStreamAsyncCommands;
+import io.lettuce.core.api.sync.RedisCommands;
 
 @Component
 public class Worker {
-  private static final String REDIS_STREAM = "interactions_stream";
-  private static final String CONSUMER_GROUP = "interactions_group";
-  private static final String CONSUMER_NAME = "consumer-" + UUID.randomUUID();
+    private static final String REDIS_STREAM = "interactions_stream";
+    private static final String CONSUMER_GROUP = "interactions_group";
+    private static final String CONSUMER_NAME = "consumer-" + UUID.randomUUID();
 
-  private static final String POSTS_HMAP = "POSTS_HMAP";
-  private static final InteractionEnum LIKE = InteractionEnum.INCREMENT_LIKE;
-  private static final InteractionEnum SHARE = InteractionEnum.INCREMENT_SHARE;
+    private static final int MAX_BATCH = 5000;
+    private static final int POLL_TIMEOUT = 50;
 
+    private final RedisCommands<String, String> syncRedis;
+    private final Executor dbExecutor;
+    private JdbcTemplate template;
 
-  private final Executor threadExecutor;
-  private final DbService pgsql;
-  private final RedisAsyncCommands<String, String> asyncCommands;
-  private final RedisStreamAsyncCommands<String, String> asyncRedis;
+    public Worker(
+        RedisCommands<String, String> syncRedis,
+        @Qualifier("dbExecutor") Executor dbExecutor
+    ) {
+        this.syncRedis = syncRedis;
+        this.dbExecutor = dbExecutor;
+    }
 
-  public Worker(
-    Executor threadExecutor, 
-    DbService db,
-    RedisAsyncCommands<String, String> asyncCommands,
-    RedisStreamAsyncCommands<String, String> asyncRedis
-  ) {
-    this.threadExecutor = threadExecutor;
-    this.pgsql = db;
-    this.asyncCommands = asyncCommands;
-    this.asyncRedis = asyncRedis;
-  }
-
-  public void process(StreamMessage<String, String> message){
-    threadExecutor.execute(() -> {
-      Map<String, String> body = message.getBody();
-                
-      Long postId = Long.valueOf(body.get("postId"));
-      Long userId = Long.valueOf(body.get("userId"));
-      String interaction = body.get("interaction");
-
-      Optional<PostEntity> result = pgsql.save(userId, postId, interaction);
-      if(result.isPresent()){
-        this.updatePostStatus(postId, result.get());
-      }
-    });
-  }
-
-  @Scheduled(fixedDelay = 10)
-  public void consume(){
-    RedisFuture<List<StreamMessage<String, String>>> future = this.asyncRedis.xreadgroup(
-      Consumer.from(CONSUMER_GROUP, CONSUMER_NAME),
-      XReadArgs.Builder.block(1),
-      StreamOffset.from(REDIS_STREAM, ">")
-    );
-
-    future.thenAccept(messages -> {
-      if(!messages.isEmpty()){
-        for (StreamMessage<String, String> message : messages) {            
-          InteractionRedisMessage msg = this.parseStreamMessage(message);
-
-          // Verifica se a interação já existe antes de tentar salvar
-          RedisFuture<String> futureExistingValue = this.findUserInteraction(msg.getUserId(), msg.getPostId(), msg.getInteractionEnum());
-          this.storeUserInteaction(msg.getUserId(), msg.getPostId(), msg.getInteractionEnum());
-          futureExistingValue.thenAccept(value -> {
-            if(value == null){
-              this.process(message);
+    @Scheduled(fixedDelay = 10)
+    public void consumeInteractions() {
+        try {
+            List<StreamMessage<String, String>> messages = syncRedis.xreadgroup(
+                Consumer.from(CONSUMER_GROUP, CONSUMER_NAME),
+                XReadArgs.Builder.block(POLL_TIMEOUT).count(MAX_BATCH),
+                StreamOffset.lastConsumed(REDIS_STREAM)
+            );
+            
+            if (messages != null && !messages.isEmpty()) {
+                processBatchAsync(messages);
             }
-          });
-          this.ack(message.getId());
+        } catch (Exception e) {
+            System.err.println("Consumer error: " + e.getMessage());
         }
-      }
-    });
-  }
+    }
 
-  private RedisFuture<String> storeUserInteaction(Long userId, Long postId, InteractionEnum interactionEnum){
-    /*
-      - K: userid:postid:interaction 
-      - V: Instant.now().toString() 
-      - TTL: 60s
-    */
-
-    String key = userId + "::" + postId + "::" + interactionEnum.getInteraction();
-    String value = Instant.now().toString();
-
-    SetArgs setArgs = SetArgs.Builder.ex(60); 
-    return this.asyncCommands.set(key, value, setArgs);
-  }
-  
-  private RedisFuture<String> findUserInteraction(Long userId, Long postId, InteractionEnum interactionEnum){
-    String key = userId + "::" + postId + "::" + interactionEnum.getInteraction();
-    return this.asyncCommands.get(key);
-  }
-
-  private RedisFuture<Boolean> updatePostStatus(Long postId, PostEntity updatedPost){
-    /*
-     * HashMap
-     * K: Hash Name - posts
-     * Map<String, String> - pares (chave, valor) dentro do HashMap
-     * 
-     * posts_hmap { postId:like: 1, postId:share: 0 }
-     */
-    String shareField = postId + "::" + SHARE;
-    Long newLikeAmount = updatedPost.getLikes_count();
+    private void processBatchAsync(List<StreamMessage<String, String>> messages) {
+        dbExecutor.execute(() -> {
+            long start = System.currentTimeMillis();
+            
+            try {
+                Map<Long, Long> likes = new HashMap<>();
+                Map<Long, Long> shares = new HashMap<>();
+                
+                // Processamento ULTRA rápido
+                for (StreamMessage<String, String> msg : messages) {
+                    Long postId = Long.parseLong(msg.getBody().get("postId"));
+                    String interaction = msg.getBody().get("interaction");
+                    
+                    if ("INCREMENT_LIKE".equals(interaction)) {
+                        likes.merge(postId, 1L, Long::sum);
+                    } else {
+                        shares.merge(postId, 1L, Long::sum);
+                    }
+                }
+                
+                // Batch update NOVO (mais rápido)
+                updateCountsBatch(likes, "likes_count");
+                updateCountsBatch(shares, "shares_count");
+                
+                // Ack em lote (MUITO mais rápido)
+                String[] messageIds = messages.stream()
+                    .map(StreamMessage::getId)
+                    .toArray(String[]::new);
+                
+                syncRedis.xack("interactions_stream", "interactions_group", messageIds);
+                
+                System.out.println("Processed " + messages.size() + " messages in " + 
+                                  (System.currentTimeMillis() - start) + "ms");
+                
+            } catch (Exception e) {
+                System.err.println("Batch processing error: " + e.getMessage());
+            }
+        });
+    }
     
-    String likeField = postId + "::" + LIKE;
-    Long newShareAmount = updatedPost.getShares_count();
+    private void updateCountsBatch(Map<Long, Long> counts, String column) {
+        if (counts.isEmpty()) return;
+        
+        // UPDATE em lote MUITO rápido
+        String sql = "UPDATE tb_posts SET " + column + " = " + column + " + ? WHERE id = ?";
+        
+        List<Object[]> params = counts.entrySet().stream()
+            .map(entry -> new Object[]{entry.getValue(), entry.getKey()})
+            .collect(Collectors.toList());
+        
+        template.batchUpdate(sql, params);
+    }
 
-    this.asyncCommands.hset(POSTS_HMAP, shareField, newShareAmount.toString());
-    return this.asyncCommands.hset(POSTS_HMAP, likeField, newLikeAmount.toString());
-  }
-
-  private InteractionRedisMessage parseStreamMessage(StreamMessage<String, String> message){
-    Map<String, String> body = message.getBody();
-    
-    Long postId = Long.valueOf(body.get("postId"));
-    Long userId = Long.valueOf(body.get("userId"));
-    String interaction = body.get("interaction");
-    InteractionEnum interactionEnum = InteractionEnum.valueOf(interaction);
-
-    return new InteractionRedisMessage(postId, userId, interaction, interactionEnum);
-  }
-
-  private void ack(String messageId) {
-    asyncRedis.xack(REDIS_STREAM, CONSUMER_GROUP, messageId);
-  }
 }

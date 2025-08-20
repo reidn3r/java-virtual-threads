@@ -1,11 +1,12 @@
 package com.github.reidn3r.async_multithreading.services;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionDTO;
 
@@ -20,24 +21,33 @@ public class DispatcherService {
   private final ObjectMapper mapper = new ObjectMapper();
   private final Validator validator;
   private final StreamService streamRedis;
-  private final Executor threadExecutor;
+  private final Executor httpExecutor;
 
-  public DispatcherService(StreamService redis, Executor thExecutor){
+  public DispatcherService(
+    StreamService redis, 
+    @Qualifier("httpExecutor") Executor httpExecutor
+  ){
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     this.validator = factory.getValidator();
     this.streamRedis = redis;
-    this.threadExecutor = thExecutor;
+    this.httpExecutor = httpExecutor;
   }
 
-  public void submit(String data) throws Exception {
-    this.threadExecutor.execute(() -> {
+  public CompletableFuture<Void> submit(String data) {
+    return CompletableFuture.supplyAsync(() -> {
       try {
-        InteractionDTO dto = mapper.readValue(data, InteractionDTO.class);
-        this.validate(dto);
-        this.streamRedis.stream(dto);
-      } catch (JsonProcessingException e) {
-        System.out.println("Erro: " + e.getMessage());
+        return mapper.readValue(data, InteractionDTO.class);
+      } catch (Exception e) {
+        throw new RuntimeException("Parse error", e);
       }
+    }, httpExecutor)
+    .thenComposeAsync(dto -> {
+        validate(dto); // Fast validation
+        return streamRedis.streamAsync(dto); // Non-blocking
+    }, httpExecutor)
+    .exceptionally(ex -> {
+        System.err.println("Processing error: " + ex.getMessage());
+        return null;
     });
   }
 

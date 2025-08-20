@@ -19,22 +19,18 @@ public class LikeInteractionStrategy implements InteractionStrategy<Optional<Pos
     this.likesRepository = likesRepository;
   }
 
+  @Override
   public Optional<PostEntity> handle(Long userId, Long postId) {
-    Optional<PostEntity> foundPost = this.postsRepository.findById(postId);
-    boolean userHasInteracted = this.hasUserInteracted(userId, postId);
-
-    if(!foundPost.isEmpty() && !userHasInteracted){
-      Optional<PostEntity> postRecord = this.postsRepository.incrementLikesCount(postId);
-      
-      LikeEntity likeRecord = new LikeEntity();
-      likeRecord.setPosts(foundPost.get());
-      likeRecord.setUserId(userId);
-
-      this.likesRepository.save(likeRecord);
-      return postRecord;
+      boolean userHasInteracted = this.hasUserInteracted(userId, postId);
+      if (!userHasInteracted) {
+          postsRepository.incrementLikesCount(postId);
+          LikeEntity likeRecord = new LikeEntity();
+          likeRecord.setUserId(userId);
+          likesRepository.save(likeRecord);
+          return postsRepository.findById(postId);
+      }
+      return Optional.empty();
     }
-    return Optional.empty();
-  }
 
   public boolean hasUserInteracted(Long userId, Long postId) {
     Optional<LikeEntity> foundInteraction = this.likesRepository.findByUserIdAndPosts_Id(userId, postId);

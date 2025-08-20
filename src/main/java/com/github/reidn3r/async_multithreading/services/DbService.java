@@ -3,6 +3,7 @@ package com.github.reidn3r.async_multithreading.services;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.github.reidn3r.async_multithreading.domain.PostEntity;
@@ -22,6 +23,8 @@ public class DbService {
   private final PostsRepository postsRepository;
   private final RedisCommands<String, String> redisCommands;
 
+  private final JdbcTemplate jdbcTemplate;
+
   private static final String POSTS_HMAP = "POSTS_HMAP";
   private static final InteractionEnum LIKE = InteractionEnum.INCREMENT_LIKE;
   private static final InteractionEnum SHARE = InteractionEnum.INCREMENT_SHARE;
@@ -30,10 +33,12 @@ public class DbService {
     PostsRepository postsRepository,
     LikeInteractionStrategy likeStrategy, 
     ShareInteractionStrategy shareStrategy,
-    RedisCommands<String, String> redisCommands
+    RedisCommands<String, String> redisCommands,
+    JdbcTemplate jdbcTemplate
   ){
     this.postsRepository = postsRepository;
     this.redisCommands = redisCommands;
+    this.jdbcTemplate = jdbcTemplate;
     this.strategy = Map.of(
       InteractionEnum.INCREMENT_LIKE, likeStrategy,
       InteractionEnum.INCREMENT_SHARE, shareStrategy

@@ -29,19 +29,19 @@ public class RedisConfig {
   }
   
   @Bean
-  public RedisCommands<String, String> syncRedis(
+  public RedisCommands<String, String> redisCommands(
     StatefulRedisConnection<String, String> connection) {
     return connection.sync();
   }
       
   @Bean
-  public RedisStreamAsyncCommands<String, String> asyncRedis(
+  public RedisStreamAsyncCommands<String, String> redisStreamAsyncCommands(
     StatefulRedisConnection<String, String> connection) {
     return connection.async();
   }
 
   @Bean
-  public RedisAsyncCommands<String, String> asyncCommands(
+  public RedisAsyncCommands<String, String> redisAsyncCommands(
     StatefulRedisConnection<String, String> connection) {
     return connection.async();
   }

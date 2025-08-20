@@ -1,14 +1,16 @@
 package com.github.reidn3r.async_multithreading.services;
 
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
 import org.springframework.stereotype.Service;
 
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionDTO;
 import io.lettuce.core.RedisBusyException;
-import io.lettuce.core.RedisFuture;
 import io.lettuce.core.XGroupCreateArgs;
 import io.lettuce.core.XReadArgs;
-import io.lettuce.core.api.async.RedisStreamAsyncCommands;
+import io.lettuce.core.api.async.RedisAsyncCommands;
 import io.lettuce.core.api.sync.RedisCommands;
 import jakarta.annotation.PostConstruct;
 
@@ -22,15 +24,18 @@ public class StreamService {
   private static final String REDIS_STREAM = "interactions_stream";
   private static final String CONSUMER_GROUP = "interactions_group";
   
-  private final RedisStreamAsyncCommands<String, String> asyncRedis;
   private final RedisCommands<String, String> redisCommands;
+  private final RedisAsyncCommands<String, String> asyncCommands;
+  private final Executor redisExecutor;
     
   public StreamService (
-    RedisStreamAsyncCommands<String, String> asyncRedis,
-    RedisCommands<String, String> redisCommands
+    RedisAsyncCommands<String, String> asyncCommands,
+    RedisCommands<String, String> redisCommands,
+    Executor redisExecutor
   ) {
+    this.redisExecutor = redisExecutor;
     this.redisCommands = redisCommands;
-    this.asyncRedis = asyncRedis;
+    this.asyncCommands = asyncCommands;
   }
 
   @PostConstruct
@@ -38,10 +43,33 @@ public class StreamService {
     this.createStreamGroupIfNotExists();
   }
 
-  public RedisFuture<String> stream(InteractionDTO data) {
-    HashMap<String, String> payload = this.buildStreamPayload(data);
-    return asyncRedis.xadd(REDIS_STREAM_ID, payload);
+  public CompletableFuture<Void> streamAsync(InteractionDTO data) {
+    HashMap<String, String> payload = buildStreamPayload(data);
+    return asyncCommands.xadd(REDIS_STREAM_ID, payload)
+      .thenAccept(result -> {}) // Empty handler
+      .toCompletableFuture()
+      .exceptionally(ex -> {
+        System.err.println("Redis stream error: " + ex.getMessage());
+        return null;
+    });
   }
+
+  public void streamFireAndForget(InteractionDTO data) {
+        // Não retorna Future, apenas executa async
+        redisExecutor.execute(() -> {
+            try {
+                HashMap<String, String> payload = buildStreamPayload(data);
+                asyncCommands.xadd("interactions_stream", payload)
+                    .exceptionally(ex -> {
+                        System.err.println("Redis error: " + ex.getMessage());
+                        return null;
+                    });
+            } catch (Exception e) {
+                System.err.println("Stream error: " + e.getMessage());
+            }
+        });
+    }
+  
   
   private HashMap<String, String> buildStreamPayload(InteractionDTO data){
     HashMap<String, String> payload = new HashMap<String, String>();
