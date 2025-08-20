@@ -1,7 +1,5 @@
 package com.github.reidn3r.async_multithreading.controllers;
 
-import java.util.Optional;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,24 +9,27 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.github.reidn3r.async_multithreading.domain.PostEntity;
+import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionPostDTO;
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionPostStats;
-import com.github.reidn3r.async_multithreading.repository.PostsRepository;
+import com.github.reidn3r.async_multithreading.services.DbService;
 import com.github.reidn3r.async_multithreading.services.DispatcherService;
 
 @RestController
 @RequestMapping("/interactions")
 public class InteractionController {
   private DispatcherService dispatcher;
-  private PostsRepository repository;
-
-  public InteractionController(DispatcherService dispatcher, PostsRepository repository){
+  private DbService dbService;
+  
+  public InteractionController(
+    DispatcherService dispatcher,
+    DbService dbService
+  ){
     this.dispatcher = dispatcher;
-    this.repository = repository;
+    this.dbService = dbService;
   }
 
   private static final ResponseEntity<Object> CREATED_RESPONSE = 
-    ResponseEntity.status(HttpStatus.CREATED).body(null);
+    ResponseEntity.status(HttpStatus.CREATED).build();
 
   @PostMapping()
   public ResponseEntity<Object> write(@RequestBody() String body) throws Exception {
@@ -37,14 +38,14 @@ public class InteractionController {
   }
 
   @GetMapping("/{postId}")
-  public ResponseEntity<Optional<PostEntity>> postData(@PathVariable("postId") Long postId){
-    Optional<PostEntity> foundPost = this.repository.findById(postId);
+  public ResponseEntity<InteractionPostDTO> postData(@PathVariable("postId") Long postId){
+    InteractionPostDTO foundPost = this.dbService.findPostById(postId);
     return ResponseEntity.status(HttpStatus.OK).body(foundPost);
   }
 
   @GetMapping("/stats")
   public ResponseEntity<InteractionPostStats> stats(){
-    InteractionPostStats stats = this.repository.stats();
+    InteractionPostStats stats = this.dbService.stats();
     return ResponseEntity.status(HttpStatus.OK).body(stats);
   }
 }

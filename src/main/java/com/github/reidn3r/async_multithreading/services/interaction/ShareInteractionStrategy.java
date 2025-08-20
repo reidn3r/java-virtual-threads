@@ -10,7 +10,7 @@ import com.github.reidn3r.async_multithreading.repository.PostsRepository;
 import com.github.reidn3r.async_multithreading.repository.ShareRepository;
 
 @Service
-public class ShareInteractionStrategy implements InteractionStrategy<Optional<ShareEntity>> {
+public class ShareInteractionStrategy implements InteractionStrategy<Optional<PostEntity>> {
   private final PostsRepository postsRepository;
   private final ShareRepository shareRepository;
 
@@ -19,19 +19,19 @@ public class ShareInteractionStrategy implements InteractionStrategy<Optional<Sh
     this.shareRepository = sharesRepository;
   }
 
-  public Optional<ShareEntity> handle(Long userId, Long postId) {
+  public Optional<PostEntity> handle(Long userId, Long postId) {
     Optional<PostEntity> foundPost = this.postsRepository.findById(postId);
     boolean userHasInteracted = this.hasUserInteracted(userId, postId);
 
     if(!foundPost.isEmpty() && !userHasInteracted){
-      this.postsRepository.incrementSharesCount(postId);
+      Optional<PostEntity> postRecord = this.postsRepository.incrementSharesCount(postId);
 
       ShareEntity shareRecord = new ShareEntity();
       shareRecord.setPosts(foundPost.get());
       shareRecord.setUserId(userId);
 
       this.shareRepository.save(shareRecord);
-      return Optional.of(shareRecord);
+      return postRecord;
     }
     return Optional.empty();
   }

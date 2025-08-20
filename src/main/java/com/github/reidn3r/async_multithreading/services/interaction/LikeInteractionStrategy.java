@@ -10,7 +10,7 @@ import com.github.reidn3r.async_multithreading.repository.LikeRepository;
 import com.github.reidn3r.async_multithreading.repository.PostsRepository;
 
 @Service
-public class LikeInteractionStrategy implements InteractionStrategy<Optional<LikeEntity>> {
+public class LikeInteractionStrategy implements InteractionStrategy<Optional<PostEntity>> {
   private final PostsRepository postsRepository;
   private final LikeRepository likesRepository;
 
@@ -19,19 +19,19 @@ public class LikeInteractionStrategy implements InteractionStrategy<Optional<Lik
     this.likesRepository = likesRepository;
   }
 
-  public Optional<LikeEntity> handle(Long userId, Long postId) {
+  public Optional<PostEntity> handle(Long userId, Long postId) {
     Optional<PostEntity> foundPost = this.postsRepository.findById(postId);
     boolean userHasInteracted = this.hasUserInteracted(userId, postId);
 
     if(!foundPost.isEmpty() && !userHasInteracted){
-      this.postsRepository.incrementLikesCount(postId);
+      Optional<PostEntity> postRecord = this.postsRepository.incrementLikesCount(postId);
       
       LikeEntity likeRecord = new LikeEntity();
       likeRecord.setPosts(foundPost.get());
       likeRecord.setUserId(userId);
 
       this.likesRepository.save(likeRecord);
-      return Optional.of(likeRecord);
+      return postRecord;
     }
     return Optional.empty();
   }

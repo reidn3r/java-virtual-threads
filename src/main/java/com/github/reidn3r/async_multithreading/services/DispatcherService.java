@@ -19,23 +19,22 @@ import jakarta.validation.ValidatorFactory;
 public class DispatcherService {
   private final ObjectMapper mapper = new ObjectMapper();
   private final Validator validator;
-  private final RedisService redis;
+  private final StreamService streamRedis;
   private final Executor threadExecutor;
 
-  public DispatcherService(RedisService redis, Executor thExecutor){
+  public DispatcherService(StreamService redis, Executor thExecutor){
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     this.validator = factory.getValidator();
-    this.redis = redis;
+    this.streamRedis = redis;
     this.threadExecutor = thExecutor;
   }
 
   public void submit(String data) throws Exception {
     this.threadExecutor.execute(() -> {
-      InteractionDTO dto;
       try {
-        dto = mapper.readValue(data, InteractionDTO.class);
+        InteractionDTO dto = mapper.readValue(data, InteractionDTO.class);
         this.validate(dto);
-        this.redis.stream(dto);
+        this.streamRedis.stream(dto);
       } catch (JsonProcessingException e) {
         System.out.println("Erro: " + e.getMessage());
       }
