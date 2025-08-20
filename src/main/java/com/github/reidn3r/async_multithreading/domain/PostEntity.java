@@ -26,7 +26,6 @@ public class PostEntity {
   private Long id;
 
   private Long userId;
-  private Long postId;
   private String content;
   private String url;
   private Long likes_count;
