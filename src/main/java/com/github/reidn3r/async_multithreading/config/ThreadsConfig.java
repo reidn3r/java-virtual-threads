@@ -9,23 +9,23 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ThreadsConfig {
 
-    @Bean
-    public Executor httpExecutor() {
-        return Executors.newVirtualThreadPerTaskExecutor();
-    }
+  @Bean
+  public Executor httpExecutor() {
+    return Executors.newVirtualThreadPerTaskExecutor();
+  }
 
-    @Bean 
-    public Executor redisExecutor() {
-        return Executors.newFixedThreadPool(4, Thread.ofVirtual().factory());
-    }
+  @Bean 
+  public Executor redisExecutor() {
+    return Executors.newFixedThreadPool(4, Thread.ofVirtual().factory());
+  }
 
-    @Bean
-    public Executor dbExecutor() {
-        return Executors.newFixedThreadPool(8, Thread.ofVirtual().factory());
-    }
+  @Bean
+  public Executor dbExecutor() {
+    return Executors.newFixedThreadPool(4, Thread.ofVirtual().factory());
+  }
 
-    @Bean
-    public Executor workerExecutor() {
-        return Executors.newFixedThreadPool(2, Thread.ofVirtual().factory());
-    }
+  @Bean
+  public Executor workerExecutor() {
+    return Executors.newFixedThreadPool(4, Thread.ofVirtual().factory());
+  }
 }

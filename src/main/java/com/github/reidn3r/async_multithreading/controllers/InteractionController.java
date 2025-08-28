@@ -2,6 +2,7 @@ package com.github.reidn3r.async_multithreading.controllers;
 
 import java.util.concurrent.Executor;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +30,7 @@ public class InteractionController {
   public InteractionController(
     StreamService streamService,
     DbService dbService,
-    Executor httpExecutor
+    @Qualifier("httpExecutor") Executor httpExecutor
   ){
     this.streamService = streamService;
     this.dbService = dbService;
@@ -37,20 +38,17 @@ public class InteractionController {
   }
 
   @PostMapping()
-    public ResponseEntity<Object> write(@RequestBody() String body) {
-        // Processamento ASSÍNCRONO REAL - não espera resultado
-        httpExecutor.execute(() -> {
-            try {
-                InteractionDTO dto = mapper.readValue(body, InteractionDTO.class);
-                streamService.streamFireAndForget(dto); // NÃO BLOQUEANTE
-            } catch (Exception e) {
-                System.err.println("Error processing: " + e.getMessage());
-            }
-        });
-        
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-  
+  public ResponseEntity<Object> write(@RequestBody() String body) {
+    httpExecutor.execute(() -> {
+      try {
+        InteractionDTO dto = mapper.readValue(body, InteractionDTO.class);
+        streamService.stream(dto);
+      } catch (Exception e) {
+        System.err.println("Error processing: " + e.getMessage());
+      }
+    });      
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
 
   @GetMapping("/{postId}")
   public ResponseEntity<InteractionPostDTO> postData(@PathVariable("postId") Long postId){

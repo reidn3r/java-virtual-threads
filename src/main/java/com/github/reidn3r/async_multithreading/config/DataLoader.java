@@ -67,7 +67,6 @@ public class DataLoader implements CommandLineRunner {
 
     private void loadPosts() {
         List<PostEntity> posts = new ArrayList<>();
-        Random random = new Random();
         
         for (int i = 1; i <= 500; i++) {
             PostEntity post = new PostEntity();

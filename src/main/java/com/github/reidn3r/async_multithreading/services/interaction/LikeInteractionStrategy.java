@@ -22,13 +22,13 @@ public class LikeInteractionStrategy implements InteractionStrategy<Optional<Pos
   @Override
   public Optional<PostEntity> handle(Long userId, Long postId) {
       boolean userHasInteracted = this.hasUserInteracted(userId, postId);
-      if (!userHasInteracted) {
-          postsRepository.incrementLikesCount(postId);
-          LikeEntity likeRecord = new LikeEntity();
-          likeRecord.setUserId(userId);
-          likesRepository.save(likeRecord);
-          return postsRepository.findById(postId);
-      }
+      // if (!userHasInteracted) {
+      //     postsRepository.incrementLikesCount(postId);
+      //     LikeEntity likeRecord = new LikeEntity();
+      //     likeRecord.setUserId(userId);
+      //     likesRepository.save(likeRecord);
+      //     return postsRepository.findById(postId);
+      // }
       return Optional.empty();
     }
 

@@ -1,6 +1,7 @@
 services:
   postgresql:
     image: postgres:15-alpine
+    # image: onjin/alpine-postgres
     ports:
       - "5432:5432"
     environment:

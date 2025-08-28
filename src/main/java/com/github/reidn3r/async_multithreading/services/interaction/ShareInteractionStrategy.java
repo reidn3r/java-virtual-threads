@@ -20,15 +20,15 @@ public class ShareInteractionStrategy implements InteractionStrategy<Optional<Po
 
   public Optional<PostEntity> handle(Long userId, Long postId) {
     boolean userHasInteracted = this.hasUserInteracted(userId, postId);
-    if(!userHasInteracted){
-      this.postsRepository.incrementSharesCount(postId);
+  //   if(!userHasInteracted){
+  //     this.postsRepository.incrementSharesCount(postId);
 
-      ShareEntity shareRecord = new ShareEntity();
-      shareRecord.setUserId(userId);
+  //     ShareEntity shareRecord = new ShareEntity();
+  //     shareRecord.setUserId(userId);
 
-      this.shareRepository.save(shareRecord);
-      return postsRepository.findById(postId);
-    }
+  //     this.shareRepository.save(shareRecord);
+  //     return postsRepository.findById(postId);
+  //   }
     return Optional.empty();
   }
 
