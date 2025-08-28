@@ -15,6 +15,5 @@ public interface PostsRepository extends JpaRepository<PostEntity, Long> {
 	
 	@Query("SELECT SUM(p.likes_count) as likeCount, SUM(p.shares_count) as shareCount FROM PostEntity p")
 	InteractionPostStats stats();
-	
 }
 
