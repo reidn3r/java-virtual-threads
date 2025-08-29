@@ -1,39 +1,34 @@
-// package com.github.reidn3r.async_multithreading.services.interaction;
+package com.github.reidn3r.async_multithreading.services.interaction;
 
-// import java.util.Optional;
+import java.time.Instant;
 
-// import org.springframework.stereotype.Service;
-// import com.github.reidn3r.async_multithreading.domain.PostEntity;
-// import com.github.reidn3r.async_multithreading.domain.ShareEntity;
-// import com.github.reidn3r.async_multithreading.repository.PostsRepository;
-// import com.github.reidn3r.async_multithreading.repository.ShareRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
-// @Service
-// public class ShareInteractionStrategy implements InteractionStrategy<Optional<PostEntity>> {
-//   private final PostsRepository postsRepository;
-//   private final ShareRepository shareRepository;
+import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionEnum;
 
-//   public ShareInteractionStrategy(PostsRepository postsRepository, ShareRepository sharesRepository){
-//     this.postsRepository = postsRepository;
-//     this.shareRepository = sharesRepository;
-//   }
+import io.lettuce.core.api.sync.RedisCommands;
 
-//   public Optional<PostEntity> handle(Long userId, Long postId) {
-//     boolean userHasInteracted = this.hasUserInteracted(userId, postId);
-//   //   if(!userHasInteracted){
-//   //     this.postsRepository.incrementSharesCount(postId);
+@Component
+@Qualifier("shareStrategy")
+class ShareInteractionStrategy implements InteractionStrategy {
+  private static final String PREFIX = "pending:user_share:";
 
-//   //     ShareEntity shareRecord = new ShareEntity();
-//   //     shareRecord.setUserId(userId);
+  @Override
+  public boolean handle(Long postId, Long userId, String interaction, RedisCommands<String, String> redisCommands) {
+    if(!this.isAbleToProcess(interaction)) return false;
+    
+    String userShareKey = PREFIX + userId + "::" + postId;
+    boolean isNewShare = redisCommands.setnx(userShareKey, Instant.now().toString());    
+    if (isNewShare) {
+      redisCommands.expire(userShareKey, 60*5);
+    }
+    return isNewShare;
+  }
 
-//   //     this.shareRepository.save(shareRecord);
-//   //     return postsRepository.findById(postId);
-//   //   }
-//     return Optional.empty();
-//   }
-
-//   public boolean hasUserInteracted(Long userId, Long postId) {
-//     Optional<ShareEntity> foundInteraction = this.shareRepository.findByUserIdAndPosts_Id(userId, postId);
-//     return !foundInteraction.isEmpty();
-//   }
-// }
+  @Override
+  public boolean isAbleToProcess(String interactionString) {
+    return interactionString.equals(InteractionEnum.INCREMENT_SHARE.toString());
+  }
+  
+}

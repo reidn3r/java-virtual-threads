@@ -1,39 +1,31 @@
 package com.github.reidn3r.async_multithreading.services.interaction;
 
-import java.util.Optional;
+import java.time.Instant;
 
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
-import com.github.reidn3r.async_multithreading.domain.LikeEntity;
-import com.github.reidn3r.async_multithreading.domain.PostEntity;
-import com.github.reidn3r.async_multithreading.repository.LikeRepository;
-// import com.github.reidn3r.async_multithreading.repository.PostsRepository;
+import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionEnum;
 
-// @Service
-// public class LikeInteractionStrategy implements InteractionStrategy<Optional<PostEntity>> {
-  // private final PostsRepository postsRepository;
-  // private final LikeRepository likesRepository;
+import io.lettuce.core.api.sync.RedisCommands;
 
-  // public LikeInteractionStrategy (PostsRepository postsRepository, LikeRepository likesRepository){
-  //   this.postsRepository = postsRepository;
-  //   this.likesRepository = likesRepository;
-  // }
+@Component
+@Qualifier("likeStrategy")
+class LikeInteractionStrategy implements InteractionStrategy {
+	private static final String PREFIX = "pending:user_like:";
 
-  // @Override
-  // public Optional<PostEntity> handle(Long userId, Long postId) {
-  //     boolean userHasInteracted = this.hasUserInteracted(userId, postId);
-      // if (!userHasInteracted) {
-      //     postsRepository.incrementLikesCount(postId);
-      //     LikeEntity likeRecord = new LikeEntity();
-      //     likeRecord.setUserId(userId);
-      //     likesRepository.save(likeRecord);
-      //     return postsRepository.findById(postId);
-      // }
-  //     return Optional.empty();
-  //   }
+  public boolean isAbleToProcess(String interactioString) {
+    return interactioString.equals(InteractionEnum.INCREMENT_LIKE.getInteraction());
+  }
 
-  // public boolean hasUserInteracted(Long userId, Long postId) {
-  //   Optional<LikeEntity> foundInteraction = this.likesRepository.findByUserIdAndPosts_Id(userId, postId);
-  //   return !foundInteraction.isEmpty();
-  // }
-// }
+  public boolean handle(Long postId, Long userId, String interaction, RedisCommands<String, String> redisCommands) {
+    if(!this.isAbleToProcess(interaction)) return false;
+    
+    String userLikeKey = PREFIX + userId + "::" + postId;
+    boolean isNewLike = redisCommands.setnx(userLikeKey, Instant.now().toString());    
+    if (isNewLike) {
+      redisCommands.expire(userLikeKey, 60*5);
+    }
+    return isNewLike;
+  }
+}

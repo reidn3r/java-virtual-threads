@@ -1,6 +1,11 @@
 package com.github.reidn3r.async_multithreading.services.interaction;
 
-public interface InteractionStrategy<PostEntity> {
-  public PostEntity handle(Long userId, Long postId);
-  public boolean hasUserInteracted(Long userId, Long postId);
+import org.springframework.stereotype.Component;
+
+import io.lettuce.core.api.sync.RedisCommands;
+
+@Component
+public interface InteractionStrategy {
+  boolean handle(Long postId, Long userId, String interaction, RedisCommands<String, String> redisCommands);
+  boolean isAbleToProcess(String interactionString);
 }
