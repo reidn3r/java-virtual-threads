@@ -16,16 +16,16 @@ public class ThreadsConfig {
 
   @Bean 
   public Executor redisExecutor() {
-    return Executors.newFixedThreadPool(4, Thread.ofVirtual().factory());
+    return Executors.newVirtualThreadPerTaskExecutor();
   }
 
   @Bean
   public Executor dbExecutor() {
-    return Executors.newFixedThreadPool(4, Thread.ofVirtual().factory());
+    return Executors.newVirtualThreadPerTaskExecutor();
   }
 
   @Bean
   public Executor workerExecutor() {
-    return Executors.newFixedThreadPool(4, Thread.ofVirtual().factory());
+    return Executors.newVirtualThreadPerTaskExecutor();
   }
 }
