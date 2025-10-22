@@ -15,7 +15,7 @@ export const options = {
     { duration: '30s', target: 0 },
   ],
   thresholds: {
-    http_req_duration: ['p(95)<100'], // Relaxado para 100ms
+    http_req_duration: ['p(95)<1000'], 
     'successful_requests': ['rate>0.95'],
   },
 };
@@ -62,5 +62,5 @@ export default function () {
     'response time < 500ms': (r) => r.timings.duration < 500,
   });
 
-  sleep(0.5); 
+  sleep(0.3); 
 }

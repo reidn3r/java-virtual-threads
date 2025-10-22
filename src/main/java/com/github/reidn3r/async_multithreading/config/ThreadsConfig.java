@@ -20,7 +20,12 @@ public class ThreadsConfig {
   }
 
   @Bean
-  public Executor dbExecutor() {
+  public Executor writeExecutor() {
+    return Executors.newVirtualThreadPerTaskExecutor();
+  }
+  
+  @Bean
+  public Executor readExecutor() {
     return Executors.newVirtualThreadPerTaskExecutor();
   }
 

@@ -70,8 +70,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: "500MB"
-          cpus: "1.0"
+          memory: "400MB"
+          cpus: "0.8"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 10s
@@ -101,8 +101,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: "500MB"
-          cpus: "1.0"
+          memory: "400MB"
+          cpus: "0.7"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 10s

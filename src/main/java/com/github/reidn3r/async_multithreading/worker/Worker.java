@@ -38,17 +38,17 @@ public class Worker {
 	private final RedisCommands<String, String> syncRedis;
 	private final Executor redisExecutor;
 	private final InteractionFactory interactionFactory;
-	private final Executor dbExecutor;
+	private final Executor writeExecutor;
 	private final DbService dbService;
 
 	public Worker(
 		@Qualifier("redisExecutor") Executor redisExecutor,
 		RedisCommands<String, String> syncRedis,
-		@Qualifier("dbExecutor") Executor dbExecutor,
+		@Qualifier("writeExecutor") Executor writeExecutor,
 		DbService dbService,
 		InteractionFactory interactionStrategyFactory
 	) {
-		this.dbExecutor = dbExecutor;
+		this.writeExecutor = writeExecutor;
 		this.redisExecutor = redisExecutor;
 		this.syncRedis = syncRedis;
 		this.interactionFactory = interactionStrategyFactory;
@@ -100,7 +100,7 @@ public class Worker {
 
 	private void runPgsqlUpdate(Map<Long, Long> likes, Map<Long, Long> shares){
 		if (likes.isEmpty() && shares.isEmpty()) return;
-    dbExecutor.execute(() -> {
+    writeExecutor.execute(() -> {
 			this.dbService.updateInteractionsCounterBatch(likes, "likes_count");
 			this.dbService.updateInteractionsCounterBatch(shares, "shares_count");
     });
@@ -108,7 +108,7 @@ public class Worker {
     
 	@Scheduled(fixedDelay = 10_000)
 	public void pgsqlBatchInsert(){
-		dbExecutor.execute(() -> {
+		writeExecutor.execute(() -> {
 			this.processBatchForTable("tb_likes", USER_LIKE_PREFIX);
 			this.processBatchForTable("tb_shares", USER_SHARE_PREFIX);
 		});

@@ -79,10 +79,6 @@ public class DataLoader implements CommandLineRunner {
             post.setShares_count((long) 0); // Até 500 shares
             post.setCreated_at(generateRandomDate());
             
-            // // Listas vazias (como solicitado)
-            // post.setLikes(new ArrayList<>());
-            // post.setShares(new ArrayList<>());
-            
             posts.add(post);
             
             // Salva em lotes para melhor performance
