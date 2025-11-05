@@ -5,7 +5,7 @@ A aplicação foi projetada para suportar alta taxa de requisições por segundo
 
 ---
 
-## 🚀 Visão Geral
+## Visão Geral
 
 O projeto implementa uma **API REST** com **Spring Boot**, utilizando:
 - **Threads Virtuais (Java 21 / Project Loom)** para reduzir overhead de threads nativas e melhorar concorrência.  
@@ -15,23 +15,20 @@ O projeto implementa uma **API REST** com **Spring Boot**, utilizando:
 - **Docker e NGINX** para conteinerização e balanceamento de carga.  
 ---
 
-## 🧩 Arquitetura do Sistema
+## Arquitetura
 
 ![Arquitetura do Sistema](./assets/architecture.png)
 
 ---
 
-## ⚙️ Testes de Carga e Métricas de Desempenho
+## Testes de Carga e Métricas de Desempenho
 
 Os testes de carga foram realizados com **Grafana K6**, monitorando métricas como **latência média** e **throughput (req/s)**.  
 Essas medições foram essenciais para avaliar os ganhos proporcionados pelas threads virtuais.
 
-### 📊 Resultados (a serem inseridos)
-Aqui está a tabela atualizada com os dados extraídos da imagem que você enviou, já formatada em Markdown para colocar direto no seu **README.md** 👇
-
 ---
 
-### 📊 Resultados de Desempenho por Algoritmo de Load Balancing
+### Resultados de Desempenho por Algoritmo de Load Balancing
 
 | Algoritmo de Balanceamento | Throughput (req/s) | p95 (ms) | Latência Média (ms) | Nº de Instâncias de API |
 | -------------------------- | ------------------ | -------- | ------------------- | ----------------------- |
