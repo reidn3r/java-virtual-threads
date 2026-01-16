@@ -1,25 +1,26 @@
-package com.github.reidn3r.async_multithreading.services.interaction;
+package com.github.reidn3r.async_multithreading.services.interaction.factory;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionEnum;
+import com.github.reidn3r.async_multithreading.services.interaction.strategies.InteractionStrategyInterface;
 
 @Component
 public class InteractionFactory {
-  private static Map<String, InteractionStrategy> mapper;
+  private static Map<String, InteractionStrategyInterface> mapper;
   
   public InteractionFactory(
-    @Qualifier("likeStrategy") InteractionStrategy likeStrategy,
-    @Qualifier("shareStrategy") InteractionStrategy shareStrategy
+    @Qualifier("likeStrategy") InteractionStrategyInterface likeStrategy,
+    @Qualifier("shareStrategy") InteractionStrategyInterface shareStrategy
   ){
     mapper = Map.of(
       InteractionEnum.INCREMENT_LIKE.getInteraction(), likeStrategy,
       InteractionEnum.INCREMENT_SHARE.getInteraction(), shareStrategy);
   }
 
-  public InteractionStrategy getInteractionStrategy(String interaction){
+  public InteractionStrategyInterface getInteractionStrategyInterface(String interaction){
     return mapper.get(interaction);
   }
 }

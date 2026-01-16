@@ -1,8 +1,5 @@
 package com.github.reidn3r.async_multithreading.controllers;
 
-import java.util.concurrent.Executor;
-
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,41 +9,28 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionDTO;
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionPostDTO;
 import com.github.reidn3r.async_multithreading.dto.Interaction.InteractionPostStats;
-import com.github.reidn3r.async_multithreading.services.DbService;
-import com.github.reidn3r.async_multithreading.services.StreamService;
+import com.github.reidn3r.async_multithreading.services.InteractionService;
+import com.github.reidn3r.async_multithreading.services.database.DbService;
 
 @RestController
 @RequestMapping("/interactions")
 public class InteractionController {
-  private DbService dbService;
-  private final Executor httpExecutor;
-  private final StreamService streamService;
-  private final ObjectMapper mapper = new ObjectMapper();
+  private final DbService dbService;
+  private final InteractionService interactionService;
   
   public InteractionController(
-    StreamService streamService,
-    DbService dbService,
-    @Qualifier("httpExecutor") Executor httpExecutor
+    InteractionService interactionService,
+    DbService dbService
   ){
-    this.streamService = streamService;
+    this.interactionService = interactionService;
     this.dbService = dbService;
-    this.httpExecutor = httpExecutor;
   }
 
   @PostMapping()
   public ResponseEntity<Object> write(@RequestBody() String body) {
-    httpExecutor.execute(() -> {
-      try {
-        InteractionDTO dto = mapper.readValue(body, InteractionDTO.class);
-        streamService.stream(dto);
-      } catch (Exception e) {
-        System.err.println("Error processing: " + e.getMessage());
-      }
-    });      
+    interactionService.run(body);
     return ResponseEntity.status(HttpStatus.CREATED).build();
   }
 

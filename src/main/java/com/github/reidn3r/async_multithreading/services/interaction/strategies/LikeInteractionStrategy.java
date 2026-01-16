@@ -1,4 +1,4 @@
-package com.github.reidn3r.async_multithreading.services.interaction;
+package com.github.reidn3r.async_multithreading.services.interaction.strategies;
 
 import java.time.Instant;
 
@@ -11,13 +11,15 @@ import io.lettuce.core.api.sync.RedisCommands;
 
 @Component
 @Qualifier("likeStrategy")
-class LikeInteractionStrategy implements InteractionStrategy {
+class LikeInteractionStrategy implements InteractionStrategyInterface {
 	private static final String PREFIX = "pending:user_like:";
 
+  @Override()
   public boolean isAbleToProcess(String interactioString) {
     return interactioString.equals(InteractionEnum.INCREMENT_LIKE.getInteraction());
   }
 
+  @Override()
   public boolean handle(Long postId, Long userId, String interaction, RedisCommands<String, String> redisCommands) {
     if(!this.isAbleToProcess(interaction)) return false;
     

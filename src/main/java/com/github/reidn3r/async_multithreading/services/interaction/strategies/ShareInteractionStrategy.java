@@ -1,5 +1,4 @@
-package com.github.reidn3r.async_multithreading.services.interaction;
-
+package com.github.reidn3r.async_multithreading.services.interaction.strategies;
 import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -11,7 +10,7 @@ import io.lettuce.core.api.sync.RedisCommands;
 
 @Component
 @Qualifier("shareStrategy")
-class ShareInteractionStrategy implements InteractionStrategy {
+class ShareInteractionStrategy implements InteractionStrategyInterface {
   private static final String PREFIX = "pending:user_share:";
 
   @Override

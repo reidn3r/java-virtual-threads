@@ -1,11 +1,11 @@
 # Java 21 – Balanceamento de Carga & Threads Virtuais
 
-Projeto desenvolvido em **Java 21 (Spring Boot)** com foco em **alta concorrência**, **processamento assíncrono** e **escalabilidade horizontal**, explorando o poder das **threads virtuais**.  
+Projeto desenvolvido em **Java 21 (Spring Boot)** com foco em **alta concorrência**, **processamento assíncrono** e **escalabilidade horizontal**, explorando o poder de **threads virtuais**.  
 A aplicação foi projetada para suportar alta taxa de requisições por segundo, integrando banco de dados relacional e cache para otimizar latência e throughput.
 
 ---
 
-## 🚀 Visão Geral
+## Visão Geral
 
 O projeto implementa uma **API REST** com **Spring Boot**, utilizando:
 - **Threads Virtuais (Java 21 / Project Loom)** para reduzir overhead de threads nativas e melhorar concorrência.  

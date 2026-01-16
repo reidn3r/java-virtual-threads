@@ -10,9 +10,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.github.reidn3r.async_multithreading.services.DbService;
-import com.github.reidn3r.async_multithreading.services.interaction.InteractionFactory;
-import com.github.reidn3r.async_multithreading.services.interaction.InteractionStrategy;
+import com.github.reidn3r.async_multithreading.services.database.DbService;
+import com.github.reidn3r.async_multithreading.services.interaction.factory.InteractionFactory;
+import com.github.reidn3r.async_multithreading.services.interaction.strategies.InteractionStrategyInterface;
 
 import io.lettuce.core.Consumer;
 import io.lettuce.core.KeyScanCursor;
@@ -77,7 +77,7 @@ public class Worker {
 				Long userId = Long.parseLong(msg.getBody().get("userId"));
 				String interaction = msg.getBody().get("interaction");
 
-				InteractionStrategy interactionHandler = this.interactionFactory.getInteractionStrategy(interaction);
+				InteractionStrategyInterface interactionHandler = this.interactionFactory.getInteractionStrategyInterface(interaction);
 				boolean isNewRecord = interactionHandler.handle(postId, userId, interaction, syncRedis);
 
 				if(isNewRecord){

@@ -21,7 +21,6 @@ import lombok.Data;
     columnNames = {"userId", "postId"}
   )
 )
-// @Table(name = "tb_likes")
 public class LikeEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

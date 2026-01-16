@@ -13,7 +13,6 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 
 @Entity
-// @Table(name="tb_shares")
 @Table(
   name = "tb_shares",
   uniqueConstraints = @UniqueConstraint(

@@ -1,12 +1,12 @@
 package com.github.reidn3r.async_multithreading.config;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.async.RedisAsyncCommands;
-import io.lettuce.core.api.async.RedisStreamAsyncCommands;
-import io.lettuce.core.api.sync.RedisCommands;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.api.sync.RedisCommands;
 
 @Configuration
 public class RedisConfig {
@@ -32,12 +32,6 @@ public class RedisConfig {
   public RedisCommands<String, String> redisCommands(
     StatefulRedisConnection<String, String> connection) {
     return connection.sync();
-  }
-      
-  @Bean
-  public RedisStreamAsyncCommands<String, String> redisStreamAsyncCommands(
-    StatefulRedisConnection<String, String> connection) {
-    return connection.async();
   }
 
   @Bean

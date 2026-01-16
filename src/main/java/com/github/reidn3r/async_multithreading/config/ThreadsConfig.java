@@ -23,14 +23,4 @@ public class ThreadsConfig {
   public Executor writeExecutor() {
     return Executors.newVirtualThreadPerTaskExecutor();
   }
-  
-  @Bean
-  public Executor readExecutor() {
-    return Executors.newVirtualThreadPerTaskExecutor();
-  }
-
-  @Bean
-  public Executor workerExecutor() {
-    return Executors.newVirtualThreadPerTaskExecutor();
-  }
 }
